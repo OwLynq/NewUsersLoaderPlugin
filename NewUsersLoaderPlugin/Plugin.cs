@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
+﻿using NewUsersLoaderPlugin;
 using PhoneApp.Domain.Attributes;
 using PhoneApp.Domain.DTO;
 using PhoneApp.Domain.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Runtime.Serialization.Json;
 
 namespace UsersLoaderPlugin
 {
@@ -18,17 +18,18 @@ namespace UsersLoaderPlugin
         {
             logger.Info("Loading new users");
             var usersList = new List<DataTransferObject>(input);
-
+            int newUsersCount = 0;
             try
             {
                 string url = "https://dummyjson.com/users";
                 var request = WebRequest.Create(url);
                 using (var response = request.GetResponse())
                 using (var stream = response.GetResponseStream())
+                
                 {
                     var serializer = new DataContractJsonSerializer(typeof(DummyUserResponse));
                     var result = (DummyUserResponse)serializer.ReadObject(stream);
-
+                    newUsersCount = result.users.Count;
                     foreach (var user in result.users)
                     {
                         var dto = new EmployeesDTO
@@ -38,29 +39,15 @@ namespace UsersLoaderPlugin
                         };
                         usersList.Add(dto);                       
                     }
+                    
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Plugin error: {ex.Message}");
+                logger.Error(ex, "Plugin error while loading users");
             }
-            logger.Info($"Loaded {usersList.Count()} users");
+            logger.Info($"Loaded {newUsersCount} users");
             return usersList.Cast<DataTransferObject>();
         }
-    }
-
-    [DataContract]
-    public class DummyUserResponse
-    {
-        [DataMember]
-        public List<DummyUser> users { get; set; }
-    }
-
-    [DataContract]
-    public class DummyUser
-    {
-        [DataMember] public string firstName { get; set; }
-        [DataMember] public string lastName { get; set; }
-        [DataMember] public string phone { get; set; }
-    }
+    }   
 }
